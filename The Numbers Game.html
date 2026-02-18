@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>The Numbers Game: A Job Search Simulator</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Courier New',monospace;background:#fff;color:#111;font-size:14px;padding:10px}
+.W{max-width:800px;margin:0 auto}
+h1{font-size:1.4em;margin-bottom:2px}
+h2{font-size:.95em;margin-bottom:4px;border-bottom:1px solid #ddd;padding-bottom:2px}
+.screen{display:none}.screen.active{display:block}
+button{font-family:inherit;font-size:.85em;padding:4px 10px;cursor:pointer;background:#fff;border:1px solid #111;margin:2px 0}
+button:hover{background:#eee}button:disabled{opacity:.4;cursor:default}
+input,select,textarea{font-family:inherit;font-size:.85em;padding:3px 6px;border:1px solid #999;background:#fff;color:#111}
+textarea{width:100%;resize:vertical}
+.fld{margin-bottom:8px}.fld label{display:block;font-weight:bold;margin-bottom:2px;font-size:.85em}
+.tagrow{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
+.tag{background:#eee;border:1px solid #999;padding:1px 7px;font-size:.78em;cursor:pointer}.tag:hover{background:#ddd}
+.mopts{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px}.mopts button{font-size:.75em;padding:2px 6px}
+.ccards{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.ccard{border:1px solid #999;padding:6px 10px;cursor:pointer;flex:1;min-width:140px;font-size:.8em}
+.ccard:hover{background:#f5f5f5}.ccard.sel{border-color:#111;background:#eee;font-weight:bold}
+.ccard b{display:block;margin-bottom:2px}
+.srow{display:flex;align-items:center;gap:8px}.srow input[type=range]{flex:1}
+.stat{font-size:.9em;margin-bottom:6px;padding:4px 0;border-bottom:1px solid #ddd}
+.cols{display:flex;gap:15px;align-items:flex-start}
+.cleft{flex:1;min-width:0}.cright{width:220px;flex-shrink:0}
+.sec{border:1px solid #ccc;padding:8px;margin-bottom:8px}
+.pb{background:#eee;border:1px solid #ccc;height:16px;position:relative;margin:4px 0}
+.pf{height:100%;background:#111;transition:width .1s}.pt{position:absolute;top:0;left:0;right:0;text-align:center;font-size:.7em;line-height:16px;color:#555}
+#log{border:1px solid #ccc;padding:6px;height:180px;overflow-y:auto;font-size:.78em;line-height:1.5em;margin-top:8px}
+.lg{color:#080}.lb{color:#a00}.li{color:#005}.lw{color:#850}
+.mo{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:100;justify-content:center;align-items:center}
+.mo.active{display:flex}
+.mc{background:#fff;border:2px solid #111;padding:15px;max-width:420px;width:95%;max-height:90vh;overflow-y:auto}
+.tg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;width:180px;margin:8px 0}
+.tc{width:58px;height:58px;border:1px solid #111;font-size:1.8em;display:flex;align-items:center;justify-content:center;cursor:pointer;background:#fff}
+.tc:hover{background:#f0f0f0}
+.ie{border:1px solid #ccc;padding:6px;margin-bottom:4px;font-size:.85em}
+.ieh{font-weight:bold;margin-bottom:3px}
+.H{display:none}
+@media(max-width:600px){.cols{flex-direction:column}.cright{width:100%}}
+</style>
+</head>
+<body>
+<div class="W">
+
+<div class="screen active" id="scr-title">
+<h1>The Numbers Game</h1>
+<p style="font-size:.85em;color:#555">A Job Search Simulator</p>
+<p style="font-size:.85em;color:#555">by Anto Park</p><br>
+<button onclick="SS('scr-setup')">Start Game</button>
+</div>
+
+<div class="screen" id="scr-setup">
+<h1>Your Profile</h1>
+<p style="font-size:.8em;color:#666;margin-bottom:10px">Your choices determine difficulty.</p>
+<div id="rhint" class="H" style="background:#ffc;border:1px solid #cc0;padding:4px;font-size:.8em;margin-bottom:8px">💡 Leaving Titles or Industries blank adds +5 difficulty each!</div>
+
+<div class="fld"><label>Job Status</label>
+<select id="f-st"><option value="unemployed">Unemployed</option><option value="student">Student (Undergrad)</option><option value="postgrad">Post Grad (Masters/PhD)</option><option value="working">Currently Working</option></select></div>
+
+<div class="fld"><label>Years of Experience</label>
+<select id="f-yoe"><option value="none">No Work Experience</option><option value="lt6">Less than 6 months</option><option value="1y">1 year</option><option value="2-3">2-3 years</option><option value="4-6">4-6 years</option><option value="7+">7+ years</option></select></div>
+
+<div class="fld"><label>Target Job Titles (max 5)</label>
+<div class="mopts" id="topt"></div>
+<div style="margin-top:3px;display:flex;gap:4px"><input id="ct" placeholder="Custom title..." maxlength="40" style="flex:1"><button onclick="AT('t')">Add</button></div>
+<div class="tagrow" id="ttags"></div></div>
+
+<div class="fld"><label>Target Industries (max 5)</label>
+<div class="mopts" id="iopt"></div>
+<div style="margin-top:3px;display:flex;gap:4px"><input id="ci" placeholder="Custom industry..." maxlength="40" style="flex:1"><button onclick="AT('i')">Add</button></div>
+<div class="tagrow" id="itags"></div></div>
+
+<div class="fld"><label>Target Base Salary: $<span id="sald">75,000</span></label>
+<div class="srow"><span style="font-size:.8em">$50k</span><input type="range" id="f-sal" min="50000" max="150000" step="5000" value="75000" oninput="document.getElementById('sald').textContent=parseInt(this.value).toLocaleString()"><span style="font-size:.8em">$150k</span></div></div>
+
+<div class="fld"><label>LinkedIn Connections (optional)</label>
+<input type="number" id="f-con" value="0" min="0" max="5000" style="width:100px"></div>
+
+<div class="fld"><label>Class</label>
+<div class="ccards">
+<div class="ccard sel" data-c="ice" onclick="SC(this)"><b>❄️ Ice Mage</b>Application progress 15% faster</div>
+<div class="ccard" data-c="post" onclick="SC(this)"><b>📮 Postal Carrier</b>+2% networking, tailored bonus doubled</div>
+<div class="ccard" data-c="monk" onclick="SC(this)"><b>🧘 Monk</b>Passive recruiter msgs (3%/30s). Reduced if &lt;6mo exp.</div>
+</div></div>
+
+<br><button onclick="startGame()" style="font-size:1em;padding:6px 20px;font-weight:bold">Begin Job Search →</button>
+</div>
+
+<div class="screen" id="scr-game">
+<h1>The Numbers Game</h1>
+<div class="stat">
+Applications: <b id="sa">0</b> &nbsp;|&nbsp; Points: <b id="sp">0</b> &nbsp;|&nbsp; Difficulty: <b id="sd">50</b> &nbsp;|&nbsp; Interview %: <b id="si">???</b> &nbsp;|&nbsp; Interviews: <b id="sn">0</b> &nbsp;|&nbsp; Time: <b id="st">0:00</b>
+</div>
+<div class="cols">
+<div class="cleft">
+
+<div class="sec" id="sec-app">
+<h2>▸ APPLICATIONS</h2>
+<button id="ba" onclick="startApp()">Send Application</button>
+<button id="bt" onclick="openTailor()" class="H" style="font-size:.78em">Send Tailored Resume</button>
+<div id="apw" class="H"><div class="pb"><div class="pf" id="apf"></div><div class="pt" id="apt">0%</div></div></div>
+<div id="twrap" class="H"><div id="tlist"></div></div>
+<div id="aai" class="H" style="font-size:.78em;color:#555">🤖 Auto-Apply active (-5% interview chance)</div>
+</div>
+
+<div class="sec H" id="sec-net">
+<h2>▸ NETWORKING</h2>
+<p style="font-size:.8em">Play tic-tac-toe then wait 15s for interview chance (base 7%).</p>
+<button id="bn" onclick="openTTT()">Network!</button>
+<div id="npw" class="H"><div class="pb"><div class="pf" id="npf"></div><div class="pt" id="npt">0%</div></div></div>
+</div>
+
+<div class="sec H" id="sec-int">
+<h2>▸ INTERVIEWS</h2>
+<div id="ilist"></div>
+</div>
+
+<div class="sec H" id="sec-monk">
+<h2>▸ RECRUITER MESSAGES (Monk)</h2>
+<div id="mst" style="font-size:.85em">Waiting for recruiter messages...</div>
+</div>
+
+<div class="sec">
+<h2>▸ ACTIVITY LOG</h2>
+<div id="log"></div>
+</div>
+</div>
+
+<div class="cright">
+<div class="sec">
+<h2>▸ SHOP</h2>
+<button id="bc" onclick="shopCoffee()">☕ Coffee Break (10 pts)</button><br>
+<button id="bw" onclick="shopWS()">📋 Attend a Workshop (50 pts)</button><br>
+<button id="bau" onclick="shopAuto()">🤖 AutoApply (50 pts)</button><br>
+<button id="bf" onclick="shopFriend()">🤝 Networking (25 pts)</button>
+<div id="sinf" style="font-size:.75em;color:#666;margin-top:4px"></div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="screen" id="scr-win">
+<h1>🎉 YOU GOT THE JOB! 🎉</h1><br>
+<div id="wstat"></div><br>
+<button onclick="doRestart()" style="font-size:1em;padding:6px 20px">Play Again</button>
+</div>
+
+</div>
+
+<div class="mo" id="mo-ttt">
+<div class="mc" style="text-align:center">
+<h3>🤝 Networking: Tic-Tac-Toe</h3>
+<p style="font-size:.8em;margin-bottom:6px">You are X. Result doesn't matter — it's about the connection.</p>
+<div class="tg" id="tttg"></div>
+<div id="tttr" style="font-weight:bold;margin:6px 0"></div>
+<button id="tttd" class="H" onclick="closeTTT()">Continue →</button>
+</div>
+</div>
+
+<div class="mo" id="mo-tail">
+<div class="mc">
+<h3>✂️ Tailored Resume</h3>
+<p style="font-size:.85em;margin-bottom:6px" id="tprompt"></p>
+<textarea id="tinput" rows="4" placeholder="Type your response..."></textarea>
+<div id="terror" style="color:#a00;font-size:.8em;margin-top:3px"></div>
+<div style="margin-top:6px"><button onclick="submitTailor()">Submit</button> <button onclick="cancelTailor()">Cancel</button></div>
+</div>
+</div>
+<script>
+/* ===== DATA ===== */
+var TITLES=["Software Engineer","Frontend Developer","Backend Developer","Full Stack Developer","Data Analyst","Data Scientist","Product Manager","UX Designer","Graphic Designer","DevOps Engineer","QA Engineer","Mobile Developer","Systems Administrator","Cloud Architect","ML Engineer","Technical Writer","Scrum Master","Business Analyst","Security Engineer","IT Support"];
+var INDS=["Technology","Finance","Healthcare","Video Games","Entertainment","Education","Retail","Manufacturing","Consulting","Government","Nonprofit","Real Estate","Telecom","Energy","Transportation","Hospitality","Media","Aerospace","Agriculture","Legal"];
+var HARD=["Video Games","Entertainment"];
+var QS=["Why are you interested in this role?","Describe a challenging project you completed.","What makes you a good fit for this position?","Tell us about a time you worked in a team.","How do you handle tight deadlines?","What is your greatest professional achievement?","Describe your experience with relevant tools.","Why do you want to work in this industry?","How do you stay current with industry trends?","Tell us about a time you solved a difficult problem.","What motivates you in your career?","Describe a situation where you showed leadership.","How do you prioritize competing tasks?","What would you bring to our team?","Tell us about a failure and what you learned.","How do you approach learning new technologies?","Describe your ideal work environment.","What are your long-term career goals?","How do you handle constructive criticism?","Tell us about a time you went above and beyond.","What experience do you have with agile?","How do you ensure quality in your work?","Describe a time you adapted to change.","What do you know about our company?","How do you handle ambiguity?","Tell us about your communication style.","What role do you typically play in a team?","How do you approach problem decomposition?","Describe a time you mentored someone.","What interests you about this opportunity?","How do you manage stress?","Tell us about a technical decision you made.","What is your approach to documentation?","How do you balance speed and quality?","Describe your experience with version control.","What soft skills are most important?","How do you handle disagreements?","Tell us about a project you're proud of.","What do you do when stuck on a problem?","How do you approach code reviews?","Describe your testing philosophy.","What database experience do you have?","How do you handle multiple stakeholders?","Tell us about a process you improved.","What is your remote work experience?","How do you set and track goals?","Describe a time you learned quickly.","What questions do you have for us?","How do you contribute to team culture?","Tell us something not on your resume."];
+
+/* ===== STATE ===== */
+var G;
+function newG(){return{
+  cls:'ice',st:'unemployed',yoe:'none',titles:[],inds:[],sal:75000,con:0,
+  diff:50,apps:0,pts:0,ints:0,
+  aOn:false,aTk:0,
+  tUn:false,tJobs:[],tNid:1,tModal:null,
+  nUn:false,nOn:false,nTk:0,
+  ivs:[],ivNid:1,ivFB:[0,0,0],
+  cofOn:false,cofEnd:0,wsLv:0,wsCost:50,
+  autoOwn:false,autoOn:false,
+  frLv:0,
+  monkTk:0,monkCh:3,
+  showPct:false,t0:0,won:false,loop:null
+}}
+G=newG();
+
+/* ===== UTIL ===== */
+function $(x){return document.getElementById(x)}
+function SS(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});$(id).classList.add('active')}
+function SH(id){$(id).classList.remove('H')}
+function HI(id){$(id).classList.add('H')}
+function L(m,c){var d=$('log'),p=document.createElement('div');if(c)p.className=c;p.textContent='> '+m;d.appendChild(p);while(d.children.length>200)d.removeChild(d.firstChild);d.scrollTop=d.scrollHeight}
+
+/* ===== SETUP ===== */
+function initSetup(){
+  var t=$('topt');t.innerHTML='';TITLES.forEach(function(x){var b=document.createElement('button');b.textContent=x;b.onclick=function(){addT('t',x)};t.appendChild(b)});
+  var i=$('iopt');i.innerHTML='';INDS.forEach(function(x){var b=document.createElement('button');b.textContent=x;b.onclick=function(){addT('i',x)};i.appendChild(b)});
+}
+function addT(c,v){var a=c==='t'?G.titles:G.inds;if(a.length>=5||a.indexOf(v)!==-1)return;a.push(v);rT(c)}
+function remT(c,v){var a=c==='t'?G.titles:G.inds;var i=a.indexOf(v);if(i>-1)a.splice(i,1);rT(c)}
+function rT(c){var a=c==='t'?G.titles:G.inds;var el=$(c==='t'?'ttags':'itags');el.innerHTML='';a.forEach(function(v){var s=document.createElement('span');s.className='tag';s.textContent=v+' ✕';s.onclick=function(){remT(c,v)};el.appendChild(s)})}
+function AT(c){var inp=$(c==='t'?'ct':'ci');var v=inp.value.trim();if(v){addT(c,v);inp.value=''}}
+function SC(el){document.querySelectorAll('.ccard').forEach(function(c){c.classList.remove('sel')});el.classList.add('sel');G.cls=el.getAttribute('data-c')}
+
+/* ===== DIFFICULTY ===== */
+function calcD(){
+  var d={'unemployed':80,'student':60,'postgrad':50,'working':30}[G.st]||50;
+  d+={'none':20,'lt6':10,'1y':0,'2-3':-5,'4-6':-10,'7+':-15}[G.yoe]||0;
+  if(G.st==='student'&&G.yoe==='none')d+=25;
+  if(G.st==='unemployed'&&d<75)d=75;
+  if(G.titles.length===0){if(localStorage.getItem('ng_r'))d+=5}else d-=G.titles.length;
+  if(G.inds.length===0){if(localStorage.getItem('ng_r'))d+=5}else d-=G.inds.length;
+  G.inds.forEach(function(x){if(HARD.indexOf(x)!==-1)d+=3});
+  d+=Math.round((G.sal-50000)/100000*10);
+  d-=Math.min(5,Math.floor(G.con/50));
+  return Math.max(1,Math.min(100,d));
+}
+
+/* ===== INTERVIEW % ===== */
+function intPct(tb,tlb){
+  var c=10-(G.diff-1)*(9.95/99);
+  c+=G.wsLv;
+  if(G.autoOn)c-=5;
+  if(tb){var b=1;if(G.cls==='post')b*=2;c+=b}
+  if(tlb){var b2=5;if(G.cls==='post')b2*=2;c+=b2}
+  return Math.max(0.01,c);
+}
+
+/* ===== START ===== */
+function startGame(){
+  G.st=$('f-st').value;G.yoe=$('f-yoe').value;
+  G.sal=parseInt($('f-sal').value)||75000;
+  G.con=parseInt($('f-con').value)||0;
+  var s=document.querySelector('.ccard.sel');if(s)G.cls=s.getAttribute('data-c');
+  G.diff=calcD();G.t0=Date.now();
+  if(G.cls==='monk'){if(G.yoe==='none'||G.yoe==='lt6')G.monkCh=1}
+  SS('scr-game');$('sd').textContent=G.diff;
+  L("Starting job search...","li");
+  L("Class: "+{'ice':'❄️ Ice Mage','post':'📮 Postal Carrier','monk':'🧘 Monk'}[G.cls],"li");
+  L("Difficulty: "+G.diff+"/100","li");
+  if(G.cls==='ice')L("❄️ Applications 15% faster!","li");
+  if(G.cls==='post')L("📮 +2% networking, tailored bonus doubled!","li");
+  if(G.cls==='monk'){SH('sec-monk');L("🧘 Recruiter msgs active ("+G.monkCh+"% every 30s).","li")}
+  if(localStorage.getItem('ng_r'))L("🔄 Welcome back! Fail bonuses carried over.","lw");
+  G.loop=setInterval(tick,100);
+}
+
+/* ===== APP TICKS ===== */
+function appMax(){var b=50;if(G.cofOn&&Date.now()<G.cofEnd)b-=20;if(G.cls==='ice')b=Math.round(b*.85);return Math.max(10,b)}
+
+function startApp(){if(G.aOn)return;G.aOn=true;G.aTk=0;SH('apw');$('ba').disabled=true}
+
+function doneApp(isTail,tb,tlb){
+  G.aOn=false;G.aTk=0;HI('apw');$('apf').style.width='0%';$('apt').textContent='0%';$('ba').disabled=false;
+  G.apps++;var p=isTail?3:1;G.pts+=p;
+  L("📝 "+(isTail?"Tailored ":"")+"Application #"+G.apps+" sent! (+"+p+" pt"+(p>1?'s':'')+")",'lg');
+  if(G.apps===10&&!G.tUn){G.tUn=true;SH('bt');G.showPct=true;L("🎉 Congratulations! You've submitted 10 Job Applications! You now have the option to tailor your applications.","lg");L("Interview chance is now visible.","li")}
+  if(G.apps===25&&!G.nUn){G.nUn=true;SH('sec-net');L("🤝 Networking unlocked!","lg")}
+  if(G.apps>=10){var ch=intPct(tb||false,tlb||false);if(Math.random()*100<ch)trigInt()}
+  US();
+  if(G.autoOn&&!G.aOn&&!G.won)setTimeout(function(){if(G.autoOn&&!G.aOn&&!G.won)startApp()},200);
+}
+
+/* ===== TAILOR ===== */
+function openTailor(){
+  if(!G.tUn){L("Unlocks at 10 applications.","lw");return}
+  G.tModal={id:G.tNid++,q:QS[Math.floor(Math.random()*QS.length)],ok:false,long:false,tk:0,mx:appMax()};
+  $('tprompt').textContent=G.tModal.q;$('tinput').value='';$('terror').textContent='';
+  $('mo-tail').classList.add('active');
+}
+function submitTailor(){
+  var t=$('tinput').value.trim();
+  if(t.length<10){$('terror').textContent='Response must be at least 10 characters.';return}
+  var w=t.split(/\s+/).filter(function(x){return x.length>0});
+  var avg=w.reduce(function(s,x){return s+x.length},0)/(w.length||1);
+  if(avg<=2){$('terror').textContent='Use real words, not gibberish.';return}
+  var fr={},mx=0;w.forEach(function(x){var l=x.toLowerCase();fr[l]=(fr[l]||0)+1;if(fr[l]>mx)mx=fr[l]});
+  if(w.length>0&&mx/w.length>0.6){$('terror').textContent='Too repetitive. Write a real response.';return}
+  var tj=G.tModal;tj.ok=true;tj.long=w.length>=50;
+  G.tJobs.push(tj);G.tModal=null;
+  $('mo-tail').classList.remove('active');SH('twrap');
+  L("✂️ Tailored resume #"+tj.id+" submitted. Processing...","li");
+  if(tj.long)L("✂️ 50+ words! Extra interview bonus!","lg");
+  rTJ();
+}
+function cancelTailor(){G.tModal=null;$('mo-tail').classList.remove('active')}
+function rTJ(){
+  var el=$('tlist');el.innerHTML='';
+  if(!G.tJobs.length){HI('twrap');return}
+  G.tJobs.forEach(function(tj){
+    var d=document.createElement('div');d.className='ie';
+    var p=Math.min(100,Math.floor(tj.tk/tj.mx*100));
+    d.innerHTML='<div class="ieh">✂️ Tailored #'+tj.id+'</div><div class="pb"><div class="pf" id="tf'+tj.id+'" style="width:'+p+'%"></div><div class="pt" id="tt'+tj.id+'">'+p+'%</div></div>';
+    el.appendChild(d);
+  });
+}
+function doneTJ(tj){
+  G.tJobs=G.tJobs.filter(function(x){return x.id!==tj.id});
+  G.apps++;G.pts+=3;
+  L("✂️ Tailored application #"+G.apps+" from resume #"+tj.id+" sent! (+3 pts)","lg");
+  if(G.apps===10&&!G.tUn){G.tUn=true;SH('bt');G.showPct=true;L("🎉 10 Applications! Tailored resumes unlocked!","lg")}
+  if(G.apps===25&&!G.nUn){G.nUn=true;SH('sec-net');L("🤝 Networking unlocked!","lg")}
+  if(G.apps>=10){var ch=intPct(tj.ok,tj.long);if(Math.random()*100<ch)trigInt()}
+  rTJ();US();
+}
+
+/* ===== NETWORKING ===== */
+var TB,TD,TT;
+function openTTT(){if(G.nOn)return;TB=[0,0,0,0,0,0,0,0,0];TD=false;TT='X';$('tttr').textContent='';HI('tttd');rTTT();$('mo-ttt').classList.add('active')}
+function rTTT(){var g=$('tttg');g.innerHTML='';for(var i=0;i<9;i++){var c=document.createElement('div');c.className='tc';c.textContent=TB[i]===1?'X':TB[i]===-1?'O':'';if(!TD&&TB[i]===0&&TT==='X')(function(j){c.onclick=function(){tttM(j)}})(i);g.appendChild(c)}}
+function tttM(i){if(TD||TB[i]!==0)return;TB[i]=1;if(tttC()){rTTT();return}TT='O';var m=tttAI();if(m>-1){TB[m]=-1;if(tttC()){rTTT();return}}TT='X';rTTT()}
+function tttC(){var L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];for(var i=0;i<L.length;i++){var s=TB[L[i][0]]+TB[L[i][1]]+TB[L[i][2]];if(s===3){TD=true;$('tttr').textContent='You win!';SH('tttd');return true}if(s===-3){TD=true;$('tttr').textContent='AI wins!';SH('tttd');return true}}if(TB.indexOf(0)===-1){TD=true;$('tttr').textContent='Draw!';SH('tttd');return true}return false}
+function tttAI(){var bs=-999,bm=-1;for(var i=0;i<9;i++){if(TB[i]===0){TB[i]=-1;var s=mmx(0,false);TB[i]=0;if(s>bs){bs=s;bm=i}}}return bm}
+function mmx(d,isM){var L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];for(var i=0;i<L.length;i++){var s=TB[L[i][0]]+TB[L[i][1]]+TB[L[i][2]];if(s===3)return-10+d;if(s===-3)return 10-d}if(TB.indexOf(0)===-1)return 0;if(isM){var b=-999;for(var j=0;j<9;j++){if(TB[j]===0){TB[j]=-1;b=Math.max(b,mmx(d+1,false));TB[j]=0}}return b}else{var b2=999;for(var k=0;k<9;k++){if(TB[k]===0){TB[k]=1;b2=Math.min(b2,mmx(d+1,true));TB[k]=0}}return b2}}
+function closeTTT(){$('mo-ttt').classList.remove('active');G.nOn=true;G.nTk=0;SH('npw');$('bn').disabled=true;L("Networking in progress... (15s)","li")}
+function doneNet(){G.nOn=false;G.nTk=0;HI('npw');$('npf').style.width='0%';$('npt').textContent='0%';$('bn').disabled=false;var ch=7+G.frLv;if(G.cls==='post')ch+=2;ch=Math.min(ch,29);L("🤝 Networking complete! ("+ch+"% interview chance)","li");if(Math.random()*100<ch)trigInt();else L("No interview from this connection.","li");US()}
+
+/* ===== INTERVIEWS ===== */
+function trigInt(){
+  G.ints++;var iv={id:G.ivNid++,r:0,pOn:false,pTk:0,pMx:100,w:false,wE:0};
+  G.ivs.push(iv);SH('sec-int');L("🎯 INTERVIEW #"+iv.id+" triggered!","lg");rIV();US();
+}
+function rIV(){
+  var el=$('ilist');el.innerHTML='';
+  G.ivs.forEach(function(iv){
+    var bc=[50,25,10],ch=Math.min(99,bc[iv.r]+G.ivFB[iv.r]);
+    var d=document.createElement('div');d.className='ie';
+    var h='<div class="ieh">Interview #'+iv.id+' — Round '+(iv.r+1)+'/3 ('+ch+'% pass)</div>';
+    if(!iv.pOn&&!iv.w)h+='<button onclick="startIR('+iv.id+')">Begin Round '+(iv.r+1)+'</button>';
+    h+='<div id="ipw'+iv.id+'" class="'+(iv.pOn?'':'H')+'"><div class="pb"><div class="pf" id="ipf'+iv.id+'"></div><div class="pt" id="ipt'+iv.id+'">0%</div></div></div>';
+    h+='<div id="iwt'+iv.id+'" class="'+(iv.w?'':'H')+'" style="font-size:.8em;color:#555"></div>';
+    d.innerHTML=h;el.appendChild(d);
+  });
+}
+function startIR(id){
+  var iv=G.ivs.find(function(x){return x.id===id});if(!iv||iv.pOn||iv.w)return;
+  iv.pMx=[100,150,200][iv.r];iv.pTk=0;iv.pOn=true;
+  L("Interview #"+iv.id+" Round "+(iv.r+1)+" started...","li");rIV();
+}
+function resolveIR(iv){
+  iv.pOn=false;iv.pTk=0;
+  var bc=[50,25,10],ch=Math.min(99,bc[iv.r]+G.ivFB[iv.r]),roll=Math.random()*100;
+  if(roll<ch){
+    L("✅ Interview #"+iv.id+" Round "+(iv.r+1)+" PASSED! ("+roll.toFixed(1)+" < "+ch+"%)","lg");
+    iv.r++;
+    if(iv.r>=3){G.ivs=G.ivs.filter(function(x){return x.id!==iv.id});rIV();winGame();return}
+    iv.w=true;iv.wE=Date.now()+180000;
+    L("⏳ Interview #"+iv.id+" next round in 3 min. Keep applying!","li");
+  }else{
+    L("❌ Interview #"+iv.id+" Round "+(iv.r+1)+" FAILED. ("+roll.toFixed(1)+" >= "+ch+"%)","lb");
+    G.ivFB[iv.r]++;L("Future Round "+(iv.r+1)+" attempts: +"+G.ivFB[iv.r]+"% bonus.","lw");
+    G.ivs=G.ivs.filter(function(x){return x.id!==iv.id});
+  }
+  rIV();US();
+}
+
+/* ===== SHOP ===== */
+function shopCoffee(){if(G.pts<10){L("Need 10 pts.","lw");return}if(G.cofOn&&Date.now()<G.cofEnd){L("Coffee already active!","lw");return}G.pts-=10;G.cofOn=true;G.cofEnd=Date.now()+1800000;L("☕ Coffee Break! Apps 2s faster for 30 min.","lg");US()}
+function shopWS(){if(G.wsLv>=5){L("Workshop maxed!","lw");return}if(G.pts<G.wsCost){L("Need "+G.wsCost+" pts.","lw");return}G.pts-=G.wsCost;G.wsLv++;var costs=[100,150,200,250];G.wsCost=G.wsLv<5?costs[G.wsLv-1]:999;L("📋 Workshop Lv"+G.wsLv+"! +1% interview chance.","lg");$('bw').textContent='📋 Attend a Workshop ('+(G.wsLv<5?G.wsCost+' pts':'MAXED')+')';US()}
+function shopAuto(){if(G.autoOwn){G.autoOn=!G.autoOn;if(G.autoOn){L("🤖 Auto-Apply ON. (-5% interview chance)","lw");SH('aai');if(!G.aOn)startApp()}else{L("🤖 Auto-Apply OFF.","li");HI('aai')}$('bau').textContent='🤖 AutoApply ('+(G.autoOn?'ON':'OFF')+')';return}if(G.pts<50){L("Need 50 pts.","lw");return}G.pts-=50;G.autoOwn=true;G.autoOn=true;L("🤖 AutoApply purchased & ON! (-5% interview chance)","lw");SH('aai');$('bau').textContent='🤖 AutoApply (ON)';if(!G.aOn)startApp();US()}
+function shopFriend(){if(G.frLv>=20){L("Networking maxed! (+20%)","lw");return}if(G.pts<25){L("Need 25 pts.","lw");return}G.pts-=25;G.frLv++;L("🤝 Networking +"+G.frLv+"%!","lg");US()}
+
+/* ===== UPDATE STATS ===== */
+function US(){
+  $('sa').textContent=G.apps;$('sp').textContent=G.pts;$('sd').textContent=G.diff;$('sn').textContent=G.ints;
+  $('si').textContent=G.showPct?intPct(false,false).toFixed(2)+'%':'???';
+  if(G.t0){var e=Math.floor((Date.now()-G.t0)/1000),m=Math.floor(e/60),s=e%60;$('st').textContent=m+':'+(s<10?'0':'')+s}
+  var inf=[];if(G.wsLv)inf.push('WS:'+G.wsLv);if(G.frLv)inf.push('NW:+'+G.frLv+'%');
+  if(G.cofOn&&Date.now()<G.cofEnd){var r=Math.ceil((G.cofEnd-Date.now())/1000);inf.push('☕'+Math.floor(r/60)+'m'+(r%60)+'s')}
+  $('sinf').textContent=inf.join(' | ');
+}
+
+/* ===== GAME LOOP ===== */
+function tick(){
+  if(G.won)return;
+  // Coffee expire
+  if(G.cofOn&&Date.now()>=G.cofEnd){G.cofOn=false;L("☕ Coffee wore off.","li")}
+  // App progress
+  if(G.aOn){G.aTk++;var mx=appMax(),p=Math.min(100,G.aTk/mx*100);$('apf').style.width=p+'%';$('apt').textContent=Math.floor(p)+'%';if(G.aTk>=mx)doneApp(false,false,false)}
+  // Tailor progress
+  var done=[];G.tJobs.forEach(function(tj){tj.tk++;var p=Math.min(100,tj.tk/tj.mx*100);var pf=$('tf'+tj.id),pt=$('tt'+tj.id);if(pf)pf.style.width=p+'%';if(pt)pt.textContent=Math.floor(p)+'%';if(tj.tk>=tj.mx)done.push(tj)});done.forEach(doneTJ);
+  // Net progress
+  if(G.nOn){G.nTk++;var np=Math.min(100,G.nTk/150*100);$('npf').style.width=np+'%';$('npt').textContent=Math.floor(np)+'%';if(G.nTk>=150)doneNet()}
+  // Interviews
+  G.ivs.forEach(function(iv){
+    if(iv.pOn){iv.pTk++;var ip=Math.min(100,iv.pTk/iv.pMx*100);var pf=$('ipf'+iv.id),pt=$('ipt'+iv.id);if(pf)pf.style.width=ip+'%';if(pt)pt.textContent=Math.floor(ip)+'%';if(iv.pTk>=iv.pMx)resolveIR(iv)}
+    if(iv.w){var rem=iv.wE-Date.now();var we=$('iwt'+iv.id);if(rem<=0){iv.w=false;if(we)we.classList.add('H');L("Interview #"+iv.id+" Round "+(iv.r+1)+" ready!","lg");rIV()}else{var s=Math.ceil(rem/1000),m=Math.floor(s/60),ss=s%60;if(we){we.classList.remove('H');we.textContent='Next round in '+m+':'+(ss<10?'0':'')+ss}}}
+  });
+  // Monk
+  if(G.cls==='monk'){G.monkTk++;if(G.monkTk>=300){G.monkTk=0;if(Math.random()*100<G.monkCh){L("🧘 A recruiter reached out!","lg");trigInt()}else{$('mst').textContent='No messages yet... ('+G.monkCh+'% every 30s)'}}}
+  // Auto-apply restart
+  if(G.autoOn&&!G.aOn&&!G.won)startApp();
+  US();
+}
+
+/* ===== WIN ===== */
+function winGame(){
+  G.won=true;clearInterval(G.loop);
+  var e=Math.floor((Date.now()-G.t0)/1000),m=Math.floor(e/60),s=e%60;
+  $('wstat').innerHTML='Applications: <b>'+G.apps+'</b><br>Interviews: <b>'+G.ints+'</b><br>Points: <b>'+G.pts+'</b><br>Time: <b>'+m+'m '+s+'s</b><br>Difficulty: <b>'+G.diff+'</b><br>Class: <b>'+{'ice':'Ice Mage','post':'Postal Carrier','monk':'Monk'}[G.cls]+'</b>';
+  SS('scr-win');L("🎉🎉🎉 YOU GOT THE JOB! 🎉🎉🎉","lg");
+}
+
+/* ===== RESTART ===== */
+function doRestart(){
+  clearInterval(G.loop);var fb=G.ivFB.slice();localStorage.setItem('ng_r','1');
+  G=newG();G.ivFB=fb;
+  $('log').innerHTML='';$('ilist').innerHTML='';$('tlist').innerHTML='';
+  HI('apw');HI('twrap');HI('bt');HI('sec-net');HI('sec-int');HI('sec-monk');HI('npw');HI('aai');
+  $('ba').disabled=false;$('bw').textContent='📋 Attend a Workshop (50 pts)';$('bau').textContent='🤖 AutoApply (50 pts)';
+  SH('rhint');rT('t');rT('i');SS('scr-setup');
+}
+
+/* ===== INIT ===== */
+window.addEventListener('DOMContentLoaded',function(){
+  initSetup();
+  if(localStorage.getItem('ng_r'))SH('rhint');
+});
+</script>
+</body>
+</html>
