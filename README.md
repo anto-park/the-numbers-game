@@ -12,3 +12,9 @@ The difficulty works on a sliding scale depending on how you fill out your exper
 Thanks for playing!
 
 Anto Park
+
+---
+
+GitHub Pages Link - Click Below to Play on Browser:
+
+https://anto-park.github.io/the-numbers-game/
