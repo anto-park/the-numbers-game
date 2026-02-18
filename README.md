@@ -10,4 +10,5 @@ It took a few iterations (around a dozen) of different versions and I edited/add
 The difficulty works on a sliding scale depending on how you fill out your experience. The idea is that the less experience you have, the more difficult the job search. Theoretically, you can beat the game from your first application and interviews if you're lucky enough.
 
 Thanks for playing!
+
 Anto Park
