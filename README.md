@@ -1,9 +1,8 @@
 # the-numbers-game
-An incremental game about The Job Search
 
 Hello! 
 
-If you're reading this, I made (vibe coded) this incremental game through ZotGPT (UC Irvine's free AI tool for students, faculty, and staff). Even though I created this with ZotGPT, it is in no way, shape, or form representative of UC Irvine's views. This is a game I wanted to make based off my own views of "The Numbers Game" of the job search. Most of the students I work with utilize "cold applying" even though it's the least efficient method.
+If you're reading this, I made (vibe coded) this incremental game through ZotGPT (UC Irvine's free AI tool for students, faculty, and staff). Even though I created this with ZotGPT, it is in no way, shape, or form representative of UC Irvine's views. This is a game I wanted to make based off my own views of "The Numbers Game" of the job search. Most of the students I work with utilize "cold applying" even though it's the least efficient method. This game is more or less an allegory for how I imagine the job search feels for most job seekers.
 
 It took a few iterations (around a dozen) of different versions and I edited/added some HTML as well. This is the cleanest working version as far as I can tell. There will be bugs, but I think it gets the message across. The system prompt ended up being around 1,200 words.
 
@@ -15,6 +14,6 @@ Anto Park
 
 ---
 
-GitHub Pages Link - Click Below to Play on Browser:
+Direct Link:
 
 https://anto-park.github.io/the-numbers-game/
